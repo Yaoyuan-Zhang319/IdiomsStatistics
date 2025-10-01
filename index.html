@@ -1,0 +1,304 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>公务员逻辑填空对比学习</title>
+    <style>
+        :root {
+            --primary-color: #c7000b;
+            --secondary-color: #2b900d;
+            --bg-color: #f9f2e5;
+        }
+
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
+
+        body {
+            font-family: 'Microsoft YaHei', 'LiSu', sans-serif;
+            background: linear-gradient(45deg, #f9f2e5 0%, #fff9f0 100%), 
+                        url('data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHdpZHRoPSI4MCIgaGVpZ2h0PSI4MCIgdmlld0JveD0iMCAwIDgwIDgwIj48cmVjdCB3aWR0aD0iODAiIGhlaWdodD0iODAiIGZpbGw9IiNmOWYyZTUiLz48cGF0aCBkPSJNMCA0MEg0MFY4MEgweiIgZmlsbC1vcGFjaXR5PSIwLjA1IiBmaWxsPSIjMDAwIi8+PHBhdGggZD0iTTQwIDBINjRWMzJINDB6IiBmaWxsLW9wYWNpdHk9IjAuMDgiIGZpbGw9IiMwMDAiLz48L3N2Zz4=');
+            min-height: 100vh;
+            padding: 20px;
+        }
+
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            position: relative;
+        }
+
+        .header {
+            text-align: center;
+            margin-bottom: 40px;
+            position: relative;
+        }
+
+        .header h1 {
+            font-family: 'LiSu', sans-serif;
+            font-size: 3.5em;
+            color: #3a281d;
+            text-shadow: 3px 3px 0px rgba(199,0,11,0.1);
+            margin: 20px 0;
+            position: relative;
+        }
+
+        .header h1::after {
+            content: "";
+            position: absolute;
+            bottom: -15px;
+            left: 50%;
+            transform: translateX(-50%);
+            width: 120px;
+            height: 8px;
+            background: linear-gradient(90deg, transparent 0%, var(--primary-color) 50%, transparent 100%);
+        }
+
+        .button-group {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 20px;
+            margin-bottom: 30px;
+        }
+
+        .btn {
+            background: white url('data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHdpZHRoPSIxNiIgaGVpZ2h0PSIxNiIgdmlld0JveD0iMCAwIDI0IDI0Ij48cGF0aCBkPSJNMTIgMGM2LjYyNyAwIDEyIDUuMzczIDEyIDEycy01LjM3MyAxMi0xMiAxMi0xMi01LjM3My0xMi0xMiA1LjM3My0xMiAxMi0xMnptLTMgMTlsMS44MzEtNC43NTdsMy41MTkgMS40MDctMS4wNDEtMy4xNzkgMi4zNTYtLjA2Ny0xLjc5NS0yLjc4OCAyLjc4OCAxLjc5NS4wNjctMi4zNTYtMy4xNzkgMS4wNDFMMTcgOS44MDQgMTMuMTk0IDhsLTEuNDA3IDMuNTE5TDcgOS45NjZsMi4zNTYuMDY3LTEuNzk1IDIuNzg4IDIuNzg4LTEuNzk1em0xLjM0My0yLjQwMUwxMiAxMy42OTdsLTEuNjU3IDQuMjQ3LTEuMDAyLTIuNTg3LTIuNTg3LTEuMDAyIDQuMjQ3LTEuNjU3eiIgZmlsbD0iI2ZmZiIvPjwvc3ZnPg==') no-repeat 15px center/24px;
+            border: 2px solid #e4d7c3;
+            padding: 20px 20px 20px 50px;
+            border-radius: 12px;
+            font-size: 1.1em;
+            cursor: pointer;
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+            box-shadow: 0 5px 15px rgba(0,0,0,0.1);
+            position: relative;
+            overflow: hidden;
+            text-align: left;
+            color: #3a281d;
+        }
+
+        .btn:hover {
+            transform: translateY(-3px) rotate(1deg);
+            box-shadow: 5px 5px 15px rgba(0,0,0,0.2);
+        }
+
+        .btn::before {
+            content: "";
+            position: absolute;
+            top: 0;
+            left: -100%;
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(120deg, transparent, rgba(255,255,255,0.3), transparent);
+            transition: 0.5s;
+        }
+
+        .btn:hover::before {
+            left: 100%;
+        }
+
+        .btn:active::after {
+            content: "";
+            position: absolute;
+            width: 100%;
+            height: 100%;
+            background: radial-gradient(circle, rgba(0,0,0,0.1) 10%, transparent 60%);
+            animation: ink-spread 0.4s ease-out;
+        }
+
+        .main-btn {
+            background-color: var(--primary-color);
+            color: white;
+        }
+
+        .graph-btn {
+            background-color: var(--secondary-color);
+            color: white;
+        }
+
+        .dropdown {
+            position: relative;
+            display: inline-block;
+            width: 100%;
+        }
+
+        .dropdown-content {
+            display: none;
+            position: absolute;
+            background: rgba(255,255,255,0.95);
+            backdrop-filter: blur(5px);
+            min-width: 200px;
+            box-shadow: 0 8px 16px rgba(0,0,0,0.1);
+            z-index: 1;
+            border-radius: 10px;
+            border: 1px solid #e4d7c3;
+            width: 100%;
+        }
+
+        .dropdown:hover.dropdown-content {
+            display: none;
+        }
+
+        .dropdown.active .dropdown-content {
+            display: block;
+        }
+
+        .graph-link {
+            display: block;
+            padding: 12px 20px 12px 35px;
+            color: #3a281d;
+            text-decoration: none;
+            transition: all 0.2s ease;
+            background: url('data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHdpZHRoPSIxNiIgaGVpZ2h0PSIxNiIgdmlld0JveD0iMCAwIDI0IDI0Ij48cGF0aCBkPSJNMTIgMGMzLjA0IDAgNS44NzIgMS4xODggOCAzLjE0NHYxNi43NjhsLTIuMjEzLTEuMzgtMS43NDIgMi43NDVMMTIgMjEuMjE4bC00LjA0NSAyLjQzOS0xLjc0Mi0yLjc0NUwwIDIwLjAxMlYzLjE0NEMyLjEyOCAxLjE4OCA0Ljk2IDAgOCAwaDR6bTAgNC41bC0yLjI1IDMuNDk1IDMuNDI1IDUuMzg1TDE0LjUgOCA5Ljg0OCA3Ljk5OSAxMiA0LjV6IiBmaWxsPSIjMmI5MDBkIi8+PC9zdmc+') no-repeat 15px center/14px;
+        }
+
+        .graph-link:hover {
+            background-color: rgba(232, 242, 225, 0.5);
+            padding-left: 40px;
+        }
+
+        @keyframes float {
+            0%, 100% { transform: translateY(0); }
+            50% { transform: translateY(-10px); }
+        }
+
+        @keyframes ink-spread {
+            0% { opacity: 0; transform: scale(0.8); }
+            50% { opacity: 0.3; transform: scale(1.2); }
+            100% { opacity: 0; transform: scale(1.5); }
+        }
+
+        .deco-cloud {
+            position: fixed;
+            right: -50px;
+            top: 20%;
+            opacity: 0.1;
+            transform: rotate(30deg);
+            pointer-events: none;
+            z-index: -1;
+        }
+
+        @media (max-width: 768px) {
+            .header h1 {
+                font-size: 2.5em;
+            }
+            
+            .btn {
+                font-size: 1em;
+                padding: 15px 15px 15px 45px;
+                background-position: 10px center;
+            }
+            
+            .dropdown-content {
+                position: static;
+                box-shadow: none;
+                background: rgba(255,255,255,0.85);
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>公务员考试逻辑填空</h1>
+            <div style="height:5px; background: linear-gradient(90deg, var(--primary-color), var(--secondary-color)); margin: 0 auto 30px; width:60%; border-radius:3px;"></div>
+        </div>
+
+        <div class="button-group">
+            <a href="idioms_pairs.html" class="btn main-btn">双词训练</a>
+            <a href="idioms_trios.html" class="btn main-btn">三词训练</a>
+            <a href="idioms_quads.html" class="btn main-btn">四词训练</a>
+            <a href="idioms_pentas.html" class="btn main-btn">五词训练</a>
+            <a href="idioms_hexas.html" class="btn main-btn">六词+训练</a>
+        </div>
+
+        <div class="dropdown">
+            <button class="btn graph-btn">知识图谱探索</button>
+            <div class="dropdown-content">
+                <a href="knowledge_graph_1.html" class="graph-link">发展形成类（共76个词语）</a>
+                <a href="knowledge_graph_3.html" class="graph-link">增加减少类（共60个词语）</a>
+                <a href="knowledge_graph_4.html" class="graph-link">逻辑关系类（共37个词语）</a>
+                <a href="knowledge_graph_2.html" class="graph-link">标志象征类（共13个词语）</a>
+                <a href="knowledge_graph_5.html" class="graph-link">感受了解类（共14个词语）</a>
+                <a href="knowledge_graph_11.html" class="graph-link">引领启导类（共11个词语）</a>
+                <a href="knowledge_graph_6.html" class="graph-link">异同关系类（共44个成语）</a>
+                <a href="knowledge_graph_8.html" class="graph-link">声势数量类（共20个成语）</a>
+                <a href="knowledge_graph_9.html" class="graph-link">进步速度类（共16个成语）</a>
+                <a href="knowledge_graph_7.html" class="graph-link">理所应当类（共15个成语）</a>
+                <a href="knowledge_graph_10.html" class="graph-link">创新独有类（共13个成语）</a>
+                
+            </div>
+        </div>
+
+        <div class="deco-cloud">
+            <svg width="200" height="200" viewBox="0 0 24 24" fill="#c7000b">
+                <path d="M23.643 10.794c-.827-2.207-2.874-3.771-5.303-3.771-1.084 0-2.108.275-3.008.764-1.141-1.733-3.033-2.872-5.157-2.872-3.381 0-6.131 2.686-6.131 6.003 0 .343.036.678.098 1.003-2.589 1.063-4.442 3.62-4.442 6.61 0 3.969 3.239 7.203 7.222 7.203h12.902c3.984 0 7.222-3.234 7.222-7.203 0-3.116-2.014-5.763-4.909-6.727z"/>
+            </svg>
+        </div>
+    </div>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+        // 获取相关元素
+        const dropdown = document.querySelector('.dropdown');
+        const dropdownBtn = dropdown.querySelector('button');
+        const dropdownContent = dropdown.querySelector('.dropdown-content');
+
+        // 点击按钮切换菜单
+        dropdownBtn.addEventListener('click', function(e) {
+            e.stopPropagation(); // 阻止事件冒泡
+            const isActive = dropdown.classList.contains('active');
+            
+            // 关闭所有其他下拉菜单
+            document.querySelectorAll('.dropdown.active').forEach(other => {
+                if (other !== dropdown) other.classList.remove('active');
+            });
+            
+            // 切换当前菜单状态
+            dropdown.classList.toggle('active', !isActive);
+        });
+
+        // 点击页面其他区域关闭菜单
+        document.addEventListener('click', function(e) {
+            if (!dropdown.contains(e.target)) {
+                dropdown.classList.remove('active');
+            }
+        });
+
+        // 点击菜单项自动关闭菜单（移动端优化）
+        dropdownContent.addEventListener('click', function(e) {
+            if (window.innerWidth <= 768) {
+                dropdown.classList.remove('active');
+            }
+        });
+
+        // 窗口大小变化时重置菜单状态
+        window.addEventListener('resize', function() {
+            if (window.innerWidth > 768) {
+                dropdown.classList.remove('active');
+            }
+        });
+
+        // 动态云朵动画（原功能保留）
+        document.querySelectorAll('.deco-cloud').forEach(cloud => {
+            let x = 0;
+            setInterval(() => {
+                x += 0.5;
+                cloud.style.transform = `rotate(30deg) translate(${Math.sin(x)*10}px, ${Math.cos(x)*5}px)`;
+            }, 50);
+        });
+
+        // 触摸设备优化
+        let isTouchDevice = 'ontouchstart' in window;
+        if (isTouchDevice) {
+            dropdownBtn.addEventListener('touchend', function(e) {
+                e.preventDefault();
+                this.click();
+            });
+        }
+    });
+    </script>
+</body>
+</html>

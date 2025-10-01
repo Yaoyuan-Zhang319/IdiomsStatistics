@@ -1,0 +1,860 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>超过6个以上的词组</title>
+    <style>
+        :root {
+            --font-base: 1rem;
+            --color-primary: #1890ff;
+            --color-primary-dark: #096dd9;
+            --color-warning: #ffc107;
+            --color-danger: #dc3545;
+            --color-success: #52c41a;
+            --spacing-unit: 0.5rem;
+            --sidebar-width: 300px;
+            --border-radius: 8px;
+            --box-shadow: 0 4px 12px rgba(0,0,0,0.08);
+            --transition: all 0.3s ease;
+        }
+
+        * {
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", system-ui, sans-serif;
+            line-height: 1.6;
+            color: #333;
+            margin: 0;
+            background: linear-gradient(135deg, #f5f7fa 0%, #c3cfe2 100%);
+            display: flex;
+            min-height: 100vh;
+            transition: var(--transition);
+        }
+
+        /* 导航控制按钮 */
+        .nav-control {
+            position: fixed;
+            top: 20px;
+            left: 20px;
+            z-index: 1002;
+            background: var(--color-primary);
+            color: white;
+            border: none;
+            padding: 12px 16px;
+            border-radius: var(--border-radius);
+            cursor: pointer;
+            box-shadow: var(--box-shadow);
+            font-weight: 600;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            transition: var(--transition);
+        }
+
+        .nav-control:hover {
+            background: var(--color-primary-dark);
+            transform: translateY(-2px);
+        }
+
+        /* 侧边栏样式 */
+        .sidebar {
+            width: var(--sidebar-width);
+            background: linear-gradient(180deg, #fff 0%, #f8f9fa 100%);
+            box-shadow: 2px 0 20px rgba(0,0,0,0.1);
+            padding: calc(var(--spacing-unit) * 3);
+            position: fixed;
+            height: 100vh;
+            overflow-y: auto;
+            transition: var(--transition);
+            z-index: 1001;
+        }
+
+        .sidebar-hidden {
+            transform: translateX(-100%);
+            opacity: 0;
+            visibility: hidden;
+        }
+
+        .sidebar-header {
+            font-size: 1.4rem;
+            font-weight: 700;
+            margin-bottom: calc(var(--spacing-unit) * 3);
+            color: #2c3e50;
+            text-align: center;
+            padding-bottom: calc(var(--spacing-unit) * 2);
+            border-bottom: 2px solid var(--color-primary);
+        }
+
+        .group-list {
+            list-style: none;
+            padding: 0;
+            margin: 0;
+        }
+
+        .group-item {
+            padding: calc(var(--spacing-unit) * 2);
+            margin-bottom: var(--spacing-unit);
+            border-radius: var(--border-radius);
+            cursor: pointer;
+            transition: var(--transition);
+            border: 1px solid transparent;
+            background: white;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.05);
+        }
+
+        .group-item:hover {
+            background: var(--color-primary);
+            color: white;
+            transform: translateX(8px);
+            box-shadow: 0 4px 12px rgba(24, 144, 255, 0.3);
+        }
+
+        .group-item.active {
+            background: var(--color-primary);
+            color: white;
+            border-color: var(--color-primary-dark);
+        }
+
+        /* 主内容区 */
+        .container {
+            flex: 1;
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: calc(var(--spacing-unit) * 4);
+            transition: var(--transition);
+        }
+
+        .container-expanded {
+            margin-left: 0;
+        }
+
+        /* 主容器样式 */
+        #mainContainer {
+            margin-left: 300px; /* 默认左边距，为导航栏留出空间 */
+            padding: 20px;
+            transition: margin-left 0.3s ease;
+            min-height: 100vh;
+            background: #f8f9fa;
+        }
+
+        /* 当导航栏隐藏时，主内容区应该居中或保持合适的边距 */
+        #mainContainer.container-expanded {
+            margin-left: 0;
+            padding: 20px 5%; /* 添加左右内边距，避免内容贴边 */
+            max-width: 1200px; /* 限制最大宽度 */
+            margin: 0 auto; /* 水平居中 */
+        }
+
+        /* 移动端样式 */
+        @media (max-width: 768px) {
+            #mainContainer {
+                margin-left: 0;
+                padding: 15px;
+            }
+            
+            #mainContainer.container-expanded {
+                padding: 15px;
+                margin: 0;
+            }
+        }
+
+        /* 分组容器样式 */
+        .groups-container {
+            max-width: 100%;
+        }
+
+        /* 分组项样式 */
+        .group {
+            background: white;
+            margin-bottom: 20px;
+            border-radius: 8px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+            overflow: hidden;
+        }
+
+        /* 初始化提示框 */
+        #emergency {
+            background: linear-gradient(135deg, #fff3cd 0%, #ffeaa7 100%);
+            padding: calc(var(--spacing-unit) * 4);
+            margin: calc(var(--spacing-unit) * 3) 0;
+            border: 2px solid var(--color-warning);
+            border-radius: var(--border-radius);
+            box-shadow: var(--box-shadow);
+        }
+
+        /* 错误提示 */
+        .error-box {
+            background: linear-gradient(135deg, #f8d7da 0%, #f5c6cb 100%);
+            color: #721c24;
+            padding: calc(var(--spacing-unit) * 4);
+            margin: calc(var(--spacing-unit) * 3) 0;
+            border: 2px solid #f5c6cb;
+            border-radius: var(--border-radius);
+            box-shadow: var(--box-shadow);
+        }
+
+        /* 分组样式 */
+        .group {
+            border: none;
+            border-radius: 16px;
+            margin-bottom: calc(var(--spacing-unit) * 5);
+            padding: 0;
+            transition: var(--transition);
+            background: white;
+            box-shadow: var(--box-shadow);
+            overflow: hidden;
+        }
+
+        .group:hover {
+            transform: translateY(-4px);
+            box-shadow: 0 8px 25px rgba(0,0,0,0.15);
+        }
+
+        .idioms-header {
+            background: linear-gradient(135deg, var(--color-primary) 0%, var(--color-primary-dark) 100%);
+            color: white;
+            padding: calc(var(--spacing-unit) * 3);
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            transition: var(--transition);
+        }
+
+        .idioms-header:hover {
+            background: linear-gradient(135deg, var(--color-primary-dark) 0%, #0050b3 100%);
+        }
+
+        .toggle-icon {
+            font-size: 1.2rem;
+            transition: var(--transition);
+        }
+
+        .idioms-header h3 {
+            margin: 0;
+            font-size: 1.3rem;
+            font-weight: 600;
+        }
+
+        /* 分块样式 */
+        .section-block {
+            margin: 20px 0;
+            padding: 15px;
+            background: #f8f9fa;
+            border-radius: 8px;
+            border-left: 4px solid #007bff;
+        }
+
+        .section-title {
+            margin: 0 0 15px 0;
+            color: #495057;
+            font-size: 16px;
+            font-weight: 600;
+        }
+
+        /* 题目样式 */
+        .question {
+            margin: calc(var(--spacing-unit) * 3);
+            padding: calc(var(--spacing-unit) * 3);
+            border-left: 4px solid var(--color-primary);
+            background: linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%);
+            border-radius: var(--border-radius);
+            transition: var(--transition);
+        }
+
+        .question:hover {
+            transform: translateX(4px);
+            box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+        }
+
+        .question-text {
+            font-size: 1.1rem;
+            font-weight: 600;
+            margin-bottom: calc(var(--spacing-unit) * 2);
+            color: #2c3e50;
+            line-height: 1.5;
+        }
+
+        .question-options {
+            margin-top: 20px;
+            margin: calc(var(--spacing-unit) * 2) 0;
+            padding-left: 1.5rem;
+            color: #555;
+            line-height: 1.8;
+            font-size: 1rem;
+        }
+
+        .question .analysis {
+            background: rgba(255, 255, 255, 0.8);
+            border-radius: var(--border-radius);
+            padding: calc(var(--spacing-unit) * 3);
+            margin-top: calc(var(--spacing-unit) * 2);
+            border: 1px solid #e9ecef;
+            color: #495057;
+            font-size: 0.95rem;
+            line-height: 1.6;
+            white-space: pre-wrap;
+            word-wrap: break-word;
+            font-family: inherit;
+            box-shadow: inset 0 2px 4px rgba(0,0,0,0.05);
+        }
+        .questions-list {
+            display: flex;
+            flex-direction: column;
+            gap: 15px;
+        }
+
+        .question-item {
+            background: white;
+            padding: 15px;
+            border-radius: 8px;
+            border: 1px solid #e9ecef;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+        }
+
+        .question-meta {
+            display: flex;
+            justify-content: flex-end;
+            align-items: center;
+            font-size: 14px;
+            color: #6c757d;
+        }
+
+        .toggle-analysis-btn {
+            background: #007bff;
+            color: white;
+            border: none;
+            padding: 6px 12px;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 12px;
+            transition: background 0.2s;
+        }
+
+        .toggle-analysis-btn:hover {
+            background: #0056b3;
+        }
+
+        /* 解析内容样式 */
+        .analysis-content {
+            margin-top: 15px;
+            padding: 15px;
+            background: #f8f9fa;
+            border-radius: 6px;
+            border-left: 3px solid #28a745;
+        }
+
+        .analysis-header {
+            font-weight: 600;
+            color: #28a745;
+            margin-bottom: 8px;
+            font-size: 14px;
+        }
+
+        .analysis-text {
+            line-height: 1.6;
+            color: #495057;
+            font-size: 14px;
+        }
+        /* 隐藏状态 */
+        .hidden {
+            display: none;
+        }
+
+        /* 响应式调整 */
+        @media (max-width: 768px) {
+            .section-block {
+                padding: 12px;
+            }
+        }
+        /* 标题样式 */
+        h2 {
+            font-size: 2rem;
+            margin-bottom: calc(var(--spacing-unit) * 4);
+            color: #34495e;
+            text-align: center;
+            font-weight: 700;
+        }
+
+        h3 {
+            font-size: 1.4rem;
+            margin: 0;
+            color: inherit;
+        }
+
+        /* 移动端适配 */
+        @media (max-width: 768px) {
+            :root {
+                --font-base: 0.9rem;
+                --sidebar-width: 280px;
+            }
+
+            .nav-control {
+                top: 10px;
+                left: 10px;
+                padding: 10px 12px;
+                font-size: 0.9rem;
+            }
+
+            .container {
+                padding: calc(var(--spacing-unit) * 3);
+            }
+
+            .group {
+                margin-bottom: calc(var(--spacing-unit) * 4);
+            }
+
+            .idioms-header {
+                padding: calc(var(--spacing-unit) * 2);
+            }
+
+            .idioms-header h3 {
+                font-size: 1.1rem;
+            }
+
+            .question {
+                margin: calc(var(--spacing-unit) * 2);
+                padding: calc(var(--spacing-unit) * 2);
+            }
+
+            h2 {
+                font-size: 1.6rem;
+            }
+        }
+
+        @media (max-width: 480px) {
+            .container {
+                padding: calc(var(--spacing-unit) * 2);
+            }
+
+            .question .analysis {
+                padding: calc(var(--spacing-unit) * 2);
+                font-size: 0.9rem;
+            }
+        }
+
+        .hidden {
+            display: none;
+        }
+
+        /* 滚动条样式 */
+        .sidebar::-webkit-scrollbar {
+            width: 6px;
+        }
+
+        .sidebar::-webkit-scrollbar-track {
+            background: #f1f1f1;
+        }
+
+        .sidebar::-webkit-scrollbar-thumb {
+            background: var(--color-primary);
+            border-radius: 3px;
+        }
+
+        .sidebar::-webkit-scrollbar-thumb:hover {
+            background: var(--color-primary-dark);
+        }
+    </style>
+</head>
+<body>
+    <!-- 导航控制按钮 -->
+    <button class="nav-control" id="navToggle">
+        <span class="nav-icon">📚</span>
+        <span class="nav-text">显示导航</span>
+    </button>
+    
+    <!-- 侧边栏导航 -->
+    <aside class="sidebar" id="sidebar">
+        <div class="sidebar-header">成语分组导航</div>
+        <ul class="group-list" id="sidebarNav"></ul>
+    </aside>
+
+    <!-- 主内容区 -->
+    <div class="container" id="mainContainer">
+        <div id="emergency">
+            <h2>🛠️ 系统初始化中...</h2>
+            <p>如果长时间未显示内容，请检查：</p>
+            <ol>
+                <li>使用Live Server运行（VSCode右键 → Open with Live Server）</li>
+                <li>确认控制台无报错（按F12打开开发者工具）</li>
+                <li>检查JSON文件是否有效</li>
+            </ol>
+        </div>
+    </div>
+
+    <script>
+        class DataProcessor {
+            constructor(data) {
+                console.log("[1/5] 初始化数据处理器");
+                this.data = data;
+                this.validateDataStructure();
+                this.graph = new Map();
+                this.buildGraph();
+            }
+
+            validateDataStructure() {
+                console.log("[2/5] 验证数据结构");
+                if (!this.data || typeof this.data !== 'object') {
+                    throw new Error("无效的JSON结构");
+                }
+                
+                if (!Array.isArray(this.data.nodes)) {
+                    throw new Error("nodes必须是数组");
+                }
+                
+                if (!Array.isArray(this.data.edges)) {
+                    throw new Error("edges必须是数组");
+                }
+
+                this.data.nodes.forEach((node, index) => {
+                    if (!node.id || typeof node.id !== 'string') {
+                        throw new Error(`节点${index}缺少有效id字段`);
+                    }
+                });
+
+                console.log("✅ 数据验证通过");
+            }
+
+            buildGraph() {
+                console.log("[3/5] 构建关系图");
+                this.data.nodes.forEach(node => {
+                    this.graph.set(node.id, new Set());
+                });
+
+                this.data.edges.forEach(edge => {
+                    if (!this.graph.has(edge.source)) {
+                        throw new Error(`无效的源节点：${edge.source}`);
+                    }
+                    if (!this.graph.has(edge.target)) {
+                        throw new Error(`无效的目标节点：${edge.target}`);
+                    }
+
+                    this.graph.get(edge.source).add(edge.target);
+                    this.graph.get(edge.target).add(edge.source);
+                });
+            }
+
+            findGroups() {
+                console.log("[4/5] 查找分组");
+                const visited = new Set();
+                const groups = [];
+
+                for (const node of this.graph.keys()) {
+                    if (!visited.has(node)) {
+                        const queue = [node];
+                        const group = [];
+                        visited.add(node);
+
+                        while (queue.length > 0) {
+                            const current = queue.shift();
+                            group.push(current);
+                            
+                            for (const neighbor of this.graph.get(current)) {
+                                if (!visited.has(neighbor)) {
+                                    visited.add(neighbor);
+                                    queue.push(neighbor);
+                                }
+                            }
+                        }
+
+                        if (group.length >= 5 && group.length <= 40) {
+                            groups.push(group);
+                        }
+                    }
+                }
+                return groups.slice(0, 21);
+            }
+
+            getRelatedQuestions(group) {
+                console.log("[5/5] 获取相关问题");
+                const questionSet = new Set();
+                
+                this.data.edges.forEach(edge => {
+                    if (group.includes(edge.source) && group.includes(edge.target)) {
+                        edge.questions.forEach(q => questionSet.add(q));
+                    }
+                });
+                return Array.from(questionSet);
+            }
+        }
+
+       class UIBuilder {
+            static createNavElement(group, index) {
+            const navItem = document.createElement('div');
+            navItem.className = 'nav-item';
+            
+            // 导航栏也只显示前3个成语
+            const displayText = group.length > 3 
+                ? `${group.slice(0, 3).join('、')}等${group.length}个词语`
+                : group.join('、');
+                
+            navItem.innerHTML = `
+                <span class="nav-index">${index + 1}</span>
+                <span class="nav-text">${displayText}</span>
+            `;
+            
+            navItem.addEventListener('click', () => {
+                // 滚动到对应的分组
+                const groupElement = document.querySelectorAll('.group')[index];
+                groupElement.scrollIntoView({ behavior: 'smooth' });
+            });
+            
+            return navItem;
+        }
+            static createGroupElement(group, questions) {
+                const element = document.createElement('div');
+                element.className = 'group';
+                
+                // 显示前3个成语，后面加"等X个词语"
+                const displayText = group.length > 3 
+                    ? `${group.slice(0, 3).join('、')}等${group.length}个词语`
+                    : group.join('、');
+
+                element.innerHTML = `
+                    <div class="idioms-header">
+                        <span class="toggle-icon">▶</span>
+                        <h3>${displayText}</h3>
+                    </div>
+                    
+                    <!-- 第一块：词语列表 -->
+                    <div class="section-block">
+                        <h4 class="section-title">📚 词语列表</h4>
+                        <div class="idioms-list">
+                            所有词语：
+                            ${group.map(idiom => `<span class="idiom-tag">${idiom}</span>`).join('，')}
+                        </div>
+                    </div>
+                    
+                    <!-- 第二块：问题列表 -->
+                    <div class="section-block">
+                        <h4 class="section-title">❓ 相关问题</h4>
+                        <div class="questions-list">
+                            ${questions.map(q => `
+                                <div class="question-item">
+                                    <div class="question-text">${q.text}</div>
+                                    <div class="question-options">${q.options}</div>
+                                    <div class="question-meta">
+                                        <button class="toggle-analysis-btn" data-question-id="${q.id}">
+                                            查看解析 ▼
+                                        </button>
+                                    </div>
+                                    <div class="analysis-content hidden" id="analysis-${q.id}">
+                                        <div class="analysis-header">📖 题目解析</div>
+                                        <div class="analysis-text">${q.analysis || '暂无解析'}</div>
+                                    </div>
+                                </div>
+                            `).join('')}
+                        </div>
+                    </div>
+                `;
+
+                // 添加折叠/展开功能
+                const header = element.querySelector('.idioms-header');
+                const content = element.querySelector('.section-block');
+                
+                header.addEventListener('click', () => {
+                    const isHidden = content.style.display === 'none';
+                    content.style.display = isHidden ? 'block' : 'none';
+                    header.querySelector('.toggle-icon').textContent = isHidden ? '▼' : '▶';
+                });
+
+                // 添加解析折叠功能
+                element.querySelectorAll('.toggle-analysis-btn').forEach(btn => {
+                    btn.addEventListener('click', (e) => {
+                        e.stopPropagation();
+                        const questionId = btn.dataset.questionId;
+                        const analysis = document.getElementById(`analysis-${questionId}`);
+                        const isHidden = analysis.classList.contains('hidden');
+                        
+                        analysis.classList.toggle('hidden');
+                        btn.textContent = isHidden ? '收起解析 ▲' : '查看解析 ▼';
+                    });
+                });
+
+                return element;
+            }
+        }
+
+
+
+        class Navigation {
+            static init() {
+                const navToggle = document.getElementById('navToggle');
+                const sidebar = document.getElementById('sidebar');
+                const container = document.getElementById('mainContainer');
+                
+                // 初始状态：导航栏显示
+                let isNavVisible = true;
+                
+                navToggle.addEventListener('click', () => {
+                    isNavVisible = !isNavVisible;
+                    this.toggleNavigation(isNavVisible, sidebar, container, navToggle);
+                });
+
+                // 点击主内容区关闭导航（移动端）
+                container.addEventListener('click', (e) => {
+                    if (window.innerWidth <= 768 && isNavVisible) {
+                        isNavVisible = false;
+                        this.toggleNavigation(isNavVisible, sidebar, container, navToggle);
+                    }
+                });
+
+                // 窗口大小变化时调整布局
+                window.addEventListener('resize', () => {
+                    if (window.innerWidth > 768 && !isNavVisible) {
+                        isNavVisible = true;
+                        this.toggleNavigation(isNavVisible, sidebar, container, navToggle);
+                    }
+                });
+            }
+
+            static toggleNavigation(isVisible, sidebar, container, toggleBtn) {
+                if (isVisible) {
+                    sidebar.classList.remove('sidebar-hidden');
+                    container.classList.remove('container-expanded');
+                    toggleBtn.querySelector('.nav-text').textContent = '隐藏导航';
+                    toggleBtn.querySelector('.nav-icon').textContent = '📚';
+                } else {
+                    sidebar.classList.add('sidebar-hidden');
+                    container.classList.add('container-expanded');
+                    toggleBtn.querySelector('.nav-text').textContent = '显示导航';
+                    toggleBtn.querySelector('.nav-icon').textContent = '📖';
+                }
+            }
+            
+            static updateSidebar(groups) {
+                const nav = document.getElementById('sidebarNav');
+                nav.innerHTML = groups.map((group, index) => {
+                    // 导航栏中只显示前3个词语
+                    const displayText = group.length > 3 
+                        ? `${group.slice(0, 3).join('、')}等${group.length}个词语`
+                        : group.join('、');
+                    
+                    return `
+                        <li class="group-item" data-index="${index}">
+                            ${displayText}
+                        </li>
+                    `;
+                }).join('');
+
+
+                 document.querySelectorAll('.group-item').forEach(item => {
+                    item.addEventListener('click', () => {
+                        // 移除所有激活状态
+                        document.querySelectorAll('.group-item').forEach(i => i.classList.remove('active'));
+                        // 添加当前激活状态
+                        item.classList.add('active');
+                        
+                        const index = item.dataset.index;
+                        document.querySelectorAll('.group')[index].scrollIntoView({
+                            behavior: 'smooth',
+                            block: 'start'
+                        });
+                        
+                        // 移动端点击后自动隐藏导航
+                        if (window.innerWidth <= 768) {
+                            document.getElementById('navToggle').click();
+                        }
+                    });
+                });
+            }
+        }
+
+
+        // 主程序
+       window.addEventListener('DOMContentLoaded', async () => {
+    try {
+        const [idiomsData, questionsData] = await Promise.all([
+            fetch('idioms_hexas.json').then(r => {
+                if (!r.ok) throw new Error(`成语数据加载失败：${r.status}`);
+                return r.json();
+            }),
+            fetch('merged_questions.json').then(r => {
+                if (!r.ok) throw new Error(`题库数据加载失败：${r.status}`);
+                return r.json();
+            })
+        ]);
+
+        const processor = new DataProcessor(idiomsData);
+        const groups = processor.findGroups();
+        
+        Navigation.init();
+        Navigation.updateSidebar(groups);
+
+        const container = document.getElementById('mainContainer');
+        document.getElementById('emergency').hidden = true;
+
+        groups.forEach((group, index) => {
+            const questionIds = processor.getRelatedQuestions(group);
+            const questions = questionIds
+                .map(id => ({ id, ...questionsData[id] }))
+                .filter(q => q.text);
+
+            const groupElement = UIBuilder.createGroupElement(group, questions);
+            groupElement.id = `group-${index}`;
+            container.appendChild(groupElement);
+        });
+
+        // 添加滚动时高亮当前分组
+        let currentActiveIndex = -1;
+        const groupElements = document.querySelectorAll('.group');
+        const navItems = document.querySelectorAll('.group-item');
+
+        const observer = new IntersectionObserver((entries) => {
+            entries.forEach(entry => {
+                if (entry.isIntersecting) {
+                    const index = Array.from(groupElements).indexOf(entry.target);
+                    if (index !== -1 && index !== currentActiveIndex) {
+                        currentActiveIndex = index;
+                        navItems.forEach(item => item.classList.remove('active'));
+                        if (navItems[index]) {
+                            navItems[index].classList.add('active');
+                        }
+                    }
+                }
+            });
+        }, {
+            threshold: 0.5,
+            rootMargin: '-20% 0px -20% 0px'
+        });
+
+        groupElements.forEach(group => observer.observe(group));
+
+    } catch (error) {
+        console.error('系统初始化失败：', error);
+        document.getElementById('emergency').innerHTML = `
+            <div class="error-box">
+                <h3>⚠️ 系统错误</h3>
+                <p>${error.message}</p>
+                <p>请检查：</p>
+                <ol>
+                    <li>JSON文件是否在相同目录</li>
+                    <li>浏览器控制台（F12）查看详细信息</li>
+                    <li>网络连接是否正常</li>
+                </ol>
+            </div>
+        `;
+    }
+});
+
+        document.addEventListener('keydown', (e) => {
+            // Ctrl + B 切换导航栏
+            if (e.ctrlKey && e.key === 'b') {
+                e.preventDefault();
+                document.getElementById('navToggle').click();
+            }
+            
+            // ESC 键关闭导航栏（移动端）
+            if (e.key === 'Escape' && window.innerWidth <= 768) {
+                const sidebar = document.getElementById('sidebar');
+                if (!sidebar.classList.contains('sidebar-hidden')) {
+                    document.getElementById('navToggle').click();
+                }
+            }
+        });
+    </script>
+</body>
+</html>

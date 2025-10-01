@@ -1,0 +1,650 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <title>五词组对比</title>
+    <style>
+        :root {
+            --primary-color: #2c3e50;
+            --secondary-color: #3498db;
+            --sidebar-width: 280px;
+        }
+
+        body {
+            font-family: "Segoe UI", system-ui, sans-serif;
+            line-height: 1.6;
+            margin: 0;
+            background-color: #f5f6fa;
+            position: relative;
+        }
+
+        /* 优化后的侧边栏样式 */
+        .sidebar {
+            width: var(--sidebar-width);
+            position: fixed;
+            top: 0;
+            height: 100vh;
+            padding: 20px;
+            background: white;
+            box-shadow: 4px 0 15px rgba(0,0,0,0.2);
+            overflow-y: auto;
+            z-index: 999;
+            transform: translateX(-100%);
+            transition: transform 0.3s cubic-bezier(0.4,0,0.2,1);
+            will-change: transform;
+            -webkit-overflow-scrolling: touch;
+            overscroll-behavior: contain;
+        }
+
+        .sidebar.active {
+            transform: translateX(0);
+        }
+
+        .sidebar-backdrop {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0,0,0,0.4);
+            opacity: 0;
+            transition: opacity 0.3s;
+            pointer-events: none;
+            z-index: 998;
+        }
+
+        .sidebar.active + .sidebar-backdrop {
+            opacity: 1;
+            pointer-events: auto;
+        }
+
+        .main-content {
+            margin-left: 0;
+            padding: 20px;
+            transition: margin-left 0.3s;
+        }
+
+        /* 移动端优化 */
+        @media (max-width: 768px) {
+            .sidebar {
+                width: 85vw;
+                box-shadow: 4px 0 15px rgba(0,0,0,0.2);
+            }
+            
+            .nav-item {
+                padding: 12px;
+                font-size: 1.1rem;
+            }
+        }
+
+        /* 桌面端布局 */
+        @media (min-width: 768px) {
+            .sidebar.active + .main-content {
+                margin-left: var(--sidebar-width);
+            }
+        }
+
+        .container {
+            max-width: 1400px;
+            margin: 0 auto;
+        }
+
+        .filter-bar {
+            margin-bottom: 2rem;
+            padding: 1rem;
+            background: white;
+            border-radius: 8px;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+        }
+
+        .filter-option {
+            margin-right: 2rem;
+            display: inline-flex;
+            align-items: center;
+        }
+
+        .filter-option label {
+            margin-right: 0.5rem;
+        }
+
+        .loading {
+            text-align: center;
+            padding: 2rem;
+            color: #666;
+            font-size: 1.2rem;
+        }
+
+        .idioms-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+            gap: 2rem;
+            margin-bottom: 2rem;
+        }
+
+        @media (max-width: 1200px) {
+            .idioms-grid {
+                grid-template-columns: repeat(3, 1fr);
+            }
+        }
+
+        @media (max-width: 992px) {
+            .idioms-grid {
+                grid-template-columns: repeat(2, 1fr);
+            }
+        }
+
+        @media (max-width: 576px) {
+            .idioms-grid {
+                grid-template-columns: 1fr;
+            }
+        }
+
+        .group-container {
+            background: white;
+            border-radius: 10px;
+            box-shadow: 0 2px 15px rgba(0,0,0,0.1);
+            margin-bottom: 30px;
+            padding: 25px;
+        }
+
+        .group-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 1.5rem;
+        }
+
+        .toggle-btn {
+            padding: 0.5rem 1rem;
+            background: var(--secondary-color);
+            color: white;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            transition: opacity 0.2s;
+        }
+
+        .toggle-btn:hover {
+            opacity: 0.9;
+        }
+
+        .idiom-card {
+            border: 1px solid #e0e0e0;
+            border-radius: 8px;
+            padding: 1.5rem;
+            transition: transform 0.2s;
+            background: #fff;
+        }
+
+        .idiom-card:hover {
+            transform: translateY(-3px);
+            box-shadow: 0 5px 15px rgba(0,0,0,0.1);
+        }
+
+        .group-nav {
+            margin-top: 20px;
+        }
+
+        .nav-item {
+            padding: 10px;
+            margin: 5px 0;
+            border-radius: 4px;
+            cursor: pointer;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            transition: background 0.2s;
+        }
+
+        .nav-item:hover {
+            background: #f0f8ff;
+        }
+
+        .nav-badge {
+            background: #e74c3c;
+            color: white;
+            padding: 0.2rem 0.6rem;
+            border-radius: 10px;
+            font-size: 0.8rem;
+        }
+
+        /* 解析折叠样式 */
+        .analysis-container {
+            margin-top: 10px;
+            position: relative;
+        }
+
+        .toggle-analysis {
+            background: none;
+            border: none;
+            color: var(--secondary-color);
+            cursor: pointer;
+            padding: 5px 0;
+            font-size: 0.9em;
+            display: flex;
+            align-items: center;
+        }
+
+        .toggle-analysis::before {
+            content: "▶";
+            font-size: 0.8em;
+            margin-right: 5px;
+            transition: transform 0.2s;
+        }
+
+        .toggle-analysis.active::before {
+            transform: rotate(90deg);
+        }
+
+        .analysis-content {
+            max-height: 0;
+            overflow: hidden;
+            transition: max-height 0.3s ease;
+        }
+
+        .analysis-content.expanded {
+            max-height: 1000px;
+        }
+
+        .question-item {
+            background: #f8f9fa;
+            border-left: 4px solid var(--secondary-color);
+            margin-bottom: 15px;
+            padding: 15px;
+            white-space: normal;
+            word-wrap: break-word;
+        }
+
+        .analysis {
+            color: #666;
+            background: #f0f8ff;
+            padding: 10px;
+            border-radius: 5px;
+            margin-top: 10px;
+        }
+
+        .frequency-badge {
+            background: #e74c3c;
+            color: white;
+            padding: 0.3rem 0.8rem;
+            border-radius: 12px;
+            font-size: 0.9rem;
+            margin-left: 1rem;
+        }
+    </style>
+</head>
+<body>
+    <button class="sidebar-toggle">☰ 菜单</button>
+    
+    <aside class="sidebar">
+        <div class="sidebar-filter">
+            <h3>快速筛选</h3>
+            <select id="sidebarFilter">
+                <option value="all">全部词语</option>
+                <option value="four">四字成语</option>
+                <option value="two">二字实词</option>
+            </select>
+        </div>
+        <nav class="group-nav" id="groupNav"></nav>
+    </aside>
+
+    <div class="sidebar-backdrop"></div>
+
+    <div class="main-content">
+        <div class="filter-bar">
+            <div class="filter-option">
+                <label>筛选类型：</label>
+                <select id="filterType">
+                    <option value="all">全部词语</option>
+                    <option value="four">四字成语</option>
+                    <option value="two">二字实词</option>
+                </select>
+            </div>
+        </div>
+        <div class="container" id="app">
+            <div class="loading">正在加载学习资料...</div>
+        </div>
+    </div>
+
+    <script>
+
+        // 新增交互逻辑
+        const sidebar = document.querySelector('.sidebar');
+        const backdrop = document.querySelector('.sidebar-backdrop');
+        let touchStartX = 0;
+        let isScrolling = false;
+
+        // 手势交互逻辑
+        document.addEventListener('touchstart', e => {
+            touchStartX = e.touches[0].clientX;
+            isScrolling = false;
+        }, { passive: true });
+
+        document.addEventListener('touchmove', e => {
+            const deltaX = e.touches[0].clientX - touchStartX;
+            const deltaY = Math.abs(e.touches[0].clientY - touchStartY);
+            
+            // 优先处理垂直滚动
+            if (deltaY > 10) {
+                isScrolling = true;
+                return;
+            }
+
+            if (!isScrolling && Math.abs(deltaX) > 10) {
+                e.preventDefault();
+                const progress = Math.min(1, Math.max(0, deltaX / window.innerWidth));
+                sidebar.style.transform = `translateX(${-100 + progress * 100}%)`;
+            }
+        }, { passive: false });
+
+        document.addEventListener('touchend', e => {
+            const touchEndX = e.changedTouches[0].clientX;
+            const deltaX = touchEndX - touchStartX;
+            
+            if (!isScrolling && Math.abs(deltaX) > window.innerWidth * 0.2) {
+                sidebar.classList.toggle('active');
+            }
+            sidebar.style.transform = ''; // 清除临时变换
+        });
+
+        // 点击外部关闭
+        document.addEventListener('click', e => {
+            if (sidebar.classList.contains('active') && 
+                !e.target.closest('.sidebar') && 
+                !e.target.closest('.sidebar-toggle')) {
+                sidebar.classList.remove('active');
+            }
+        });
+
+        // 键盘导航支持
+        sidebar.addEventListener('transitionend', () => {
+            const isOpen = sidebar.classList.contains('active');
+            sidebar.setAttribute('aria-expanded', isOpen);
+            if (isOpen) document.querySelector('.sidebar a')?.focus();
+        });
+        
+        class UnionFind {
+            constructor() {
+                this.parent = new Map();
+            }
+
+            find(id) {
+                if (!this.parent.has(id)) this.parent.set(id, id);
+                if (this.parent.get(id) !== id) {
+                    this.parent.set(id, this.find(this.parent.get(id)));
+                }
+                return this.parent.get(id);
+            }
+
+            union(x, y) {
+                const rootX = this.find(x);
+                const rootY = this.find(y);
+                if (rootX !== rootY) {
+                    this.parent.set(rootY, rootX);
+                }
+            }
+
+            getGroups() {
+                const groups = new Map();
+                for (const [id] of this.parent) {
+                    const root = this.find(id);
+                    if (!groups.has(root)) groups.set(root, []);
+                    groups.get(root).push(id);
+                }
+                return Array.from(groups.values());
+            }
+        }
+
+        class PentasApp {
+            constructor(containerId) {
+                this.container = document.getElementById(containerId);
+                this.sidebarNav = document.getElementById('groupNav');
+                this.uf = new UnionFind();
+                this.currentGroups = [];
+                this.filterType = 'all';
+                this.groupElements = [];
+            }
+
+            async init() {
+                try {
+                    const [idiomsData, questionsData] = await Promise.all([
+                        this.loadData('idioms_pentas.json'),
+                        this.loadData('merged_questions.json')
+                    ]);
+                    
+                    this.prepareData(idiomsData);
+                    this.currentGroups = this.processGroups(idiomsData, questionsData);
+                    this.setupFilter();
+                    this.setupSidebarToggle();
+                    this.render();
+                } catch (error) {
+                    this.showError(error);
+                }
+            }
+
+            setupFilter() {
+                const syncFilters = (value) => {
+                    this.filterType = value;
+                    document.getElementById('filterType').value = value;
+                    document.getElementById('sidebarFilter').value = value;
+                    this.render();
+                };
+
+                document.getElementById('filterType').addEventListener('change', (e) => {
+                    syncFilters(e.target.value);
+                });
+
+                document.getElementById('sidebarFilter').addEventListener('change', (e) => {
+                    syncFilters(e.target.value);
+                });
+            }
+
+            setupSidebarToggle() {
+                const sidebar = document.querySelector('.sidebar');
+                document.querySelector('.sidebar-toggle').addEventListener('click', () => {
+                    sidebar.classList.toggle('active');
+                });
+            }
+
+            async loadData(url) {
+                const response = await fetch(url);
+                if (!response.ok) throw new Error(`无法加载 ${url}`);
+                return response.json();
+            }
+
+            prepareData(idiomsData) {
+                idiomsData.nodes.forEach(node => this.uf.find(node.id));
+                idiomsData.edges.forEach(edge => this.uf.union(edge.source, edge.target));
+                this.idiomsData = idiomsData;
+            }
+
+            processGroups(idiomsData, questionsData) {
+                return this.uf.getGroups()
+                    .filter(group => group.length === 5)
+                    .map(group => {
+                        const weight = this.calculateTotalWeight(group, idiomsData);
+                        return {
+                            idioms: group,
+                            questions: this.getGroupQuestions(group, idiomsData, questionsData),
+                            totalWeight: weight
+                        };
+                    })
+                    .sort((a, b) => b.totalWeight - a.totalWeight)
+                    .filter(group => group.questions.length > 0);
+            }
+
+            calculateTotalWeight(group, idiomsData) {
+                let total = 0;
+                const edgeSet = new Set();
+                
+                idiomsData.edges.forEach(edge => {
+                    if (group.includes(edge.source) && group.includes(edge.target)) {
+                        const key = [edge.source, edge.target].sort().join('-');
+                        if (!edgeSet.has(key)) {
+                            total += edge.weight || 0;
+                            edgeSet.add(key);
+                        }
+                    }
+                });
+                return total;
+            }
+
+            getGroupQuestions(group, idiomsData, questionsData) {
+                const questionSet = new Set();
+                
+                idiomsData.edges.forEach(edge => {
+                    if (group.includes(edge.source) && group.includes(edge.target)) {
+                        edge.questions.forEach(q => questionSet.add(q));
+                    }
+                });
+
+                return Array.from(questionSet)
+                    .sort((a, b) => a - b)
+                    .map(id => questionsData[id])
+                    .filter(q => q && q.text);
+            }
+
+            render() {
+                const filteredGroups = this.currentGroups.filter(group => 
+                    this.filterGroup(group)
+                );
+                
+                this.groupElements = [];
+                this.container.innerHTML = filteredGroups.length > 0 
+                    ? filteredGroups.map((group, index) => {
+                        const html = this.createGroupElement(group, index);
+                        const div = document.createElement('div');
+                        div.innerHTML = html;
+                        this.groupElements.push(div.firstElementChild);
+                        return html;
+                    }).join('')
+                    : `<div class="loading">没有符合筛选条件的学习组</div>`;
+
+                this.addToggleHandlers();
+                this.addAnalysisToggleHandlers();
+                this.renderSidebarNav(filteredGroups);
+                this.addScrollHandlers();
+            }
+
+            filterGroup(group) {
+                if (this.filterType === 'all') return true;
+                return group.idioms.every(id => 
+                    this.filterType === 'four' ? id.length === 4 : id.length === 2
+                );
+            }
+
+            createGroupElement(group, index) {
+                return `
+                    <div class="group-container" id="group-${index}">
+                        <div class="group-header">
+                            <h2>
+                                高频考点组 ${index + 1}
+                                <span class="frequency-badge">考频 ${group.totalWeight}</span>
+                            </h2>
+                            <button class="toggle-btn">显示题目</button>
+                        </div>
+                        <div class="idioms-grid">
+                            ${group.idioms.map(id => this.createIdiomCard(id)).join('')}
+                        </div>
+                        ${this.createQuestionsSection(group.questions)}
+                    </div>
+                `;
+            }
+
+            createIdiomCard(id) {
+                const node = this.idiomsData.nodes.find(n => n.id === id);
+                return `
+                    <div class="idiom-card">
+                        <h3>${id}</h3>
+                        <p>${node.explanation}</p>
+                        ${node.similar.length ? `<p>近义词：${node.similar.join('、')}</p>` : ''}
+                        ${node.opposite.length ? `<p>反义词：${node.opposite.join('、')}</p>` : ''}
+                    </div>
+                `;
+            }
+
+            createQuestionsSection(questions) {
+                return `
+                    <div class="questions-list">
+                        <h3>关联练习题（共${questions.length}题）</h3>
+                        ${questions.map(q => this.createQuestionItem(q)).join('')}
+                    </div>
+                `;
+            }
+
+            createQuestionItem(question) {
+                return `
+                    <div class="question-item">
+                        <p>${question.text}</p>
+                        <div>${question.options.join('<br>')}</div>
+                        <div class="analysis-container">
+                            <button class="toggle-analysis">解析</button>
+                            <div class="analysis-content">
+                                <div class="analysis">${question.analysis}</div>
+                            </div>
+                        </div>
+                    </div>
+                `;
+            }
+
+            addToggleHandlers() {
+                document.querySelectorAll('.group-container').forEach(container => {
+                    const btn = container.querySelector('.toggle-btn');
+                    const questions = container.querySelector('.questions-list');
+                    let isCollapsed = false;
+
+                    btn.addEventListener('click', () => {
+                        isCollapsed = !isCollapsed;
+                        questions.classList.toggle('collapsed', isCollapsed);
+                        btn.textContent = isCollapsed ? '显示题目' : '隐藏题目';
+                    });
+                });
+            }
+
+            addAnalysisToggleHandlers() {
+                document.querySelectorAll('.toggle-analysis').forEach(btn => {
+                    const content = btn.nextElementSibling;
+                    btn.addEventListener('click', () => {
+                        content.classList.toggle('expanded');
+                        btn.classList.toggle('active');
+                    });
+                });
+            }
+
+            renderSidebarNav(groups) {
+                this.sidebarNav.innerHTML = groups.map((group, index) => `
+                    <div class="nav-item" data-group="${index}">
+                        高频考点组 ${index + 1}
+                        <span class="nav-badge">${group.idioms.length}词</span>
+                    </div>
+                `).join('');
+            }
+
+            addScrollHandlers() {
+                document.querySelectorAll('.nav-item').forEach((item, index) => {
+                    item.addEventListener('click', () => {
+                        document.querySelector('.sidebar').classList.remove('active');
+                        this.groupElements[index].scrollIntoView({
+                            behavior: 'smooth',
+                            block: 'start'
+                        });
+                    });
+                });
+            }
+
+            showError(error) {
+                this.container.innerHTML = `
+                    <div class="error">
+                        <h2>数据加载失败</h2>
+                        <p>${error.message}</p>
+                        <p>请检查：1. JSON文件是否存在 2. 是否通过HTTP服务访问</p>
+                    </div>
+                `;
+            }
+        }
+
+        const app = new PentasApp('app');
+        app.init();
+    </script>
+</body>
+</html>

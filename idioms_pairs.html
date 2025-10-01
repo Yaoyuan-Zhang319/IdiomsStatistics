@@ -1,0 +1,344 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8">
+    <title>双词组对比</title>
+    <style>
+        :root {
+            --primary-color: #2c3e50;
+            --secondary-color: #3498db;
+            --success-color: #27ae60;
+            --background-color: #f8f9fa;
+            --border-color: #ecf0f1;
+            --text-color: #34495e;
+            --space-sm: 0.5rem;
+            --space-md: 1rem;
+            --space-lg: 1.5rem;
+            --radius-sm: 4px;
+            --radius-md: 8px;
+            --shadow-sm: 0 2px 4px rgba(0,0,0,0.1);
+        }
+        body {
+            font-family: "Microsoft YaHei", sans-serif;
+            margin: 0;
+            padding-top: 80px; /* 为顶部控制栏留出空间 */
+            background: var(--background-color);
+            color: var(--text-color);
+            min-height: 100vh;
+        }
+        /* 新增侧边栏样式 */
+        .sidebar {
+            position: fixed;
+            left: 20px;
+            top: 80px;
+            width: 200px;
+            height: calc(100vh - 120px);
+            background: white;
+            border-radius: var(--radius-md);
+            padding: var(--space-md);
+            box-shadow: var(--shadow-sm);
+            overflow-y: auto;
+            z-index: 100;
+        }
+
+        .sidebar h3 {
+            margin: 0 0 10px;
+            color: var(--primary-color);
+        }
+        .nav-list {
+            list-style: none;
+            padding: 0;
+            margin: 0;
+        }
+        .nav-item {
+            margin: 5px 0;
+        }
+        .nav-link {
+            display: block;
+            padding: var(--space-sm);
+            color: var(--text-color);
+            text-decoration: none;
+            border-radius: var(--radius-sm);
+            transition: all 0.2s;
+        }
+        .nav-link:hover {
+            background: #e3f2fd;
+            transform: translateX(5px);
+        }
+        /* 新增筛选控件样式 */
+        .controls {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            background: white;
+            padding: var(--space-md);
+            box-shadow: var(--shadow-sm);
+            z-index: 100;
+            display: flex;
+            justify-content: center;
+        }
+
+        .filter-group {
+            display: flex;
+            gap: var(--space-sm);
+            align-items: center;
+        }
+
+
+        .filter-btn {
+            padding: var(--space-sm) var(--space-md);
+            border: 1px solid var(--primary-color);
+            border-radius: var(--radius-sm);
+            cursor: pointer;
+            background: white;
+            transition: all 0.2s;
+        }
+
+        .filter-btn.active {
+            background: var(--primary-color);
+            color: white;
+        }
+
+        #content {
+            margin-left: 240px;
+            padding: var(--space-lg);
+            max-width: 1200px;
+        }
+
+        /* 原有样式保留 */
+        .pair-card {
+            background: white;
+            border-radius: var(--radius-md);
+            box-shadow: var(--shadow-sm);
+            padding: var(--space-md);
+            margin-bottom: var(--space-lg);
+            border: 1px solid var(--border-color);
+        }
+        .idiom-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 15px;
+        }
+        .idiom-title {
+            color: var(--primary-color);
+            font-size: 1.4em;
+            font-weight: 600;
+        }
+        .weight-badge {
+            background: var(--secondary-color);
+            color: white;
+            padding: 3px 8px;
+            border-radius: 12px;
+            font-size: 0.9em;
+        }
+        .idiom-detail {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 20px;
+        }
+        .question {
+            margin: 15px 0;
+            padding: 10px;
+            background: #f8f9fa;
+            border-left: 4px solid var(--secondary-color);
+        }
+        .show-analysis {
+            color: var(--secondary-color);
+            cursor: pointer;
+            font-size: 0.9em;
+            margin-top: 8px;
+            display: inline-block;
+        }
+        .question p {
+            white-space: pre-wrap;  /* 保留空白符和换行 */
+            word-break: break-all;  /* 中文自动换行 */
+            font-family: "Microsoft YaHei", sans-serif; /* 保持中文字体 */
+        }
+        @media (max-width: 600px) {
+            .idiom-detail {
+                grid-template-columns: 1fr;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="controls">
+        <div class="filter-group">
+            <label>
+                <input type="radio" name="filter" value="all" checked> 显示全部
+            </label>
+            <label>
+                <input type="radio" name="filter" value="idiom"> 仅四字成语
+            </label>
+            <label>
+                <input type="radio" name="filter" value="word"> 仅二字实词
+            </label>
+        </div>
+    </div>
+
+    <div class="sidebar">
+        <h3>目录导航</h3>
+        <ul class="nav-list" id="navList"></ul>
+    </div>
+    <div id="content"></div>
+
+    <script>
+        class App {
+            constructor() {
+                this.contentDiv = document.getElementById('content');
+                this.navList = document.getElementById('navList');
+                this.rawData = null;
+                this.filteredData = [];
+                
+                document.querySelectorAll('input[name="filter"]').forEach(input => {
+                    input.addEventListener('change', () => this.filterAndRender());
+                });
+            }
+
+            async init() {
+                try {
+                    const [idiomsData, questionsData] = await Promise.all([
+                        fetch('idioms_pairs.json').then(r => r.json()),
+                        fetch('merged_questions.json').then(r => r.json())
+                    ]);
+                    
+                    this.rawData = {
+                        edges: idiomsData.edges.sort((a, b) => b.weight - a.weight),
+                        nodes: idiomsData.nodes,
+                        questions: questionsData
+                    };
+                    
+                    this.filterAndRender();
+                    this.generateNavigation();
+                } catch (error) {
+                    document.body.innerHTML = `<h2 style="color:red">加载失败: ${error}</h2>`;
+                }
+            }
+
+            filterAndRender() {
+                const filterType = document.querySelector('input[name="filter"]:checked').value;
+                this.filteredData = this.rawData.edges.filter(edge => {
+                    const source = this.rawData.nodes.find(n => n.id === edge.source);
+                    const target = this.rawData.nodes.find(n => n.id === edge.target);
+                    return this.checkFilter(source, target, filterType);
+                });
+                
+                this.renderContent();
+                this.generateNavigation();
+            }
+
+            checkFilter(source, target, filterType) {
+                const checkLength = (word, length) => word.id.length === length;
+                
+                if (filterType === 'idiom') {
+                    return checkLength(source, 4) && checkLength(target, 4);
+                }
+                if (filterType === 'word') {
+                    return checkLength(source, 2) && checkLength(target, 2);
+                }
+                return true;
+            }
+
+            renderContent() {
+                this.contentDiv.innerHTML = '';
+                this.filteredData.forEach((edge, index) => {
+                    const card = this.createCard(edge, index);
+                    this.contentDiv.appendChild(card);
+                });
+            }
+
+            createCard(edge, index) {
+                const source = this.rawData.nodes.find(n => n.id === edge.source);
+                const target = this.rawData.nodes.find(n => n.id === edge.target);
+                const questions = edge.questions.map(qId => this.rawData.questions[qId]);
+
+                const card = document.createElement('div');
+                card.className = 'pair-card';
+                card.id = `card-${index}`;
+                card.innerHTML = `
+                    <div class="idiom-header">
+                        <span class="idiom-title">${source.id} vs ${target.id}</span>
+                        <span class="weight-badge">共现次数：${edge.weight}</span>
+                    </div>
+                    <div class="idiom-detail">
+                        <div>${this.renderIdiomDetail(source)}</div>
+                        <div>${this.renderIdiomDetail(target)}</div>
+                    </div>
+                    ${this.renderQuestions(questions)}
+                `;
+                card.querySelectorAll('.show-analysis').forEach(btn => {
+                    btn.addEventListener('click', this.toggleAnalysis);
+                });
+                return card;
+            }
+
+            renderIdiomDetail(idiom) {
+                return `
+                    <h3>${idiom.id}</h3>
+                    <p>${idiom.explanation}</p>
+                    ${this.renderRelations('近义', idiom.similar)}
+                    ${this.renderRelations('反义', idiom.opposite)}
+                `;
+            }
+
+            renderRelations(type, items) {
+                return items.length ? 
+                    `<p><strong>${type}词：</strong>${items.join('、')}</p>` : 
+                    `<p class="no-relation">暂无${type}词</p>`;
+            }
+
+            renderQuestions(questions) {
+                return `
+                    <div class="related-questions">
+                        <h4>相关试题（${questions.length}道）</h4>
+                        ${questions.map(q => `
+                            <div class="question">
+                                <p>${q.text}</p>
+                                <div class="options">${q.options.join('<br>')}</div>
+                                <span class="show-analysis">▼ 查看解析</span>
+                                <div class="analysis" style="display:none">
+                                    ${q.analysis}
+                                </div>
+                            </div>
+                        `).join('')}
+                    </div>
+                `;
+            }
+
+            generateNavigation() {
+                this.navList.innerHTML = '';
+                this.filteredData.forEach((edge, index) => {
+                    const li = document.createElement('li');
+                    li.className = 'nav-item';
+                    li.innerHTML = `
+                        <a href="#card-${index}" class="nav-link">
+                            ${edge.source} vs ${edge.target}
+                        </a>
+                    `;
+                    li.querySelector('a').addEventListener('click', (e) => {
+                        e.preventDefault();
+                        document.querySelector(e.target.getAttribute('href')).scrollIntoView({
+                            behavior: 'smooth'
+                        });
+                    });
+                    this.navList.appendChild(li);
+                });
+            }
+
+            toggleAnalysis(e) {
+                const analysisDiv = e.target.nextElementSibling;
+                analysisDiv.style.display = 
+                    analysisDiv.style.display === 'none' ? 'block' : 'none';
+                e.target.textContent = analysisDiv.style.display === 'none' ? 
+                    '▼ 查看解析' : '▲ 收起解析';
+            }
+        }
+
+        // 初始化应用
+        const app = new App();
+        app.init();
+    </script>
+</body>
+</html>

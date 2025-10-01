@@ -1,0 +1,533 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <title>三词组对比</title>
+    <style>
+        :root {
+            --primary-color: #2c3e50;
+            --secondary-color: #3498db;
+            --success-color: #27ae60;
+            --background-color: #f8f9fa;
+            --border-color: #ecf0f1;
+            --text-color: #34495e;
+            --space-sm: 0.5rem;
+            --space-md: 1rem;
+            --space-lg: 1.5rem;
+        }
+
+        body {
+            font-family: "Microsoft YaHei", sans-serif;
+            margin: 0;
+            padding-top: 80px;
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+            background-color: var(--background-color);
+        }
+
+        /* 顶部控制栏 */
+        .controls {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            background: white;
+            padding: var(--space-md);
+            box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+            z-index: 100;
+            display: flex;
+            justify-content: center; /* 新增居中 */
+            align-items: center;    /* 垂直居中 */
+            min-height: 20px;       /* 固定高度 */
+        }
+
+        .filter-group {
+            display: flex;
+            gap: var(--space-sm);
+            align-items: center;
+            justify-content: center; /* 按钮组居中 */
+            flex-wrap: wrap;      
+        }
+
+        .filter-btn {
+            padding: var(--space-sm) var(--space-md);
+            border: 1px solid var(--primary-color);
+            border-radius: 4px;
+            cursor: pointer;
+            background: white;
+            transition: all 0.2s;
+            font-size: 0.95em;
+        }
+
+        .filter-btn.active {
+            background: var(--primary-color);
+            color: white;
+        }
+
+        /* 侧边栏 */
+        .sidebar {
+            position: fixed;
+            left: 20px;
+            top: 80px;
+            width: 200px;
+            height: calc(100vh - 120px);
+            z-index: 1001;
+            background: white;
+            border-radius: 8px;
+            padding: var(--space-md);
+            box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+            overflow-y: auto;
+            transition: left 0.3s;
+        }
+
+        .nav-link {
+            display: block;
+            padding: var(--space-sm);
+            color: var(--text-color);
+            text-decoration: none;
+            border-radius: 4px;
+            transition: all 0.2s;
+            font-size: 0.95em;
+        }
+
+        .nav-link:hover {
+            background: #e3f2fd;
+            transform: translateX(5px);
+        }
+
+        /* 内容区 */
+        #content {
+            flex: 1;
+            padding: var(--space-lg) 40px;
+            margin-left: 220px;
+            transition: margin 0.3s;
+        }
+
+        .quad-group {
+            margin-bottom: var(--space-lg);
+            border: 1px solid var(--border-color);
+            border-radius: 8px;
+            padding: var(--space-lg);
+            background: white;
+        }
+
+        .group-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: var(--space-md);
+            gap: var(--space-md);
+        }
+
+        .group-header h2 {
+            flex: 1;
+            min-width: 0;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            font-size: 1.3em;
+            color: var(--primary-color);
+            margin: 0;
+        }
+
+        .toggle-btn {
+            padding: var(--space-sm) var(--space-md);
+            background: #fff;
+            border: 1px solid var(--border-color);
+            border-radius: 6px;
+            color: var(--text-color);
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+
+        .toggle-btn.active {
+            background: var(--secondary-color);
+            color: white;
+        }
+
+        .nodes-container {
+            display: grid;
+            gap: var(--space-md);
+            grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));
+            margin-bottom: var(--space-md);
+        }
+
+        .node-card {
+            display: flex;
+            flex-direction: column;
+            padding: var(--space-md);
+            background: white;
+            border: 1px solid var(--border-color);
+            border-radius: 8px;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.05);
+            transition: transform 0.2s;
+        }
+
+        .node-card:hover {
+            transform: translateY(-2px);
+        }
+
+        .node-card h3 {
+            font-size: 1.2em;
+            margin: 0 0 var(--space-sm);
+            color: var(--primary-color);
+        }
+
+        .node-card p {
+            margin: 0 0 var(--space-sm);
+            font-size: 0.9em;
+            color: var(--text-color);
+            line-height: 1.6;
+        }
+
+        .questions-section {
+            margin-top: var(--space-md);
+            padding: var(--space-md);
+            background: #f8fafc;
+            border-radius: 8px;
+            border: 1px solid var(--border-color);
+        }
+
+        .question-card {
+            margin: var(--space-sm) 0;
+            padding: var(--space-md);
+            background: white;
+            border-left: 3px solid var(--secondary-color);
+            box-shadow: 0 2px 4px rgba(0,0,0,0.05);
+        }
+
+        .sidebar-toggle {
+            display: none;
+            position: fixed;
+            left: 20px;
+            top: 90px;
+            z-index: 1000;
+            padding: var(--space-sm);
+            background: white;
+            border: 1px solid var(--border-color);
+            border-radius: 4px;
+            cursor: pointer;
+        }
+
+        @media (max-width: 1200px) {
+            .controls {
+                padding: var(--space-md);
+            }
+            
+            #content {
+                padding: var(--space-md);
+            }
+        }
+
+        @media (max-width: 992px) {
+            body {
+                padding-top: 80px;
+            }
+
+            .controls {
+                min-height: 60px;
+                padding: 10px;
+            }
+
+            .sidebar {
+                left: -280px;
+                width: 280px;
+                height: calc(100vh - 100px);
+                top: 70px;
+                transition: left 0.3s;
+            }
+
+            .sidebar.active {
+                left: 0;
+                box-shadow: 2px 0 8px rgba(0,0,0,0.2);
+            }
+
+            .sidebar.active ~ #content {
+                margin-left: 280px;
+                overflow: hidden;
+                position: relative;
+                transition: margin 0.3s;
+            }
+
+            #content {
+                margin-left: 0;
+                padding: var(--space-md);
+                transition: margin 0.3s;
+            }
+
+            .sidebar-mask {
+                display: none;
+                position: fixed;
+                top: 70px;  /* 与侧边栏顶部对齐 */
+                left: 0;
+                width: 100%;
+                height: calc(100% - 70px);
+                background: rgba(0,0,0,0.4);
+                z-index: 999;
+            }
+
+            .sidebar-toggle {
+                display: block;
+                left: 20px;
+                top: 80px;
+                padding: 12px;
+                font-size: 1.2em;
+                transition: left 0.3s;
+            }
+
+            .sidebar.active ~ .sidebar-toggle {
+                left: 300px;
+            }
+
+            .nodes-container {
+                grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+            }
+
+            /* 移除旧版 transform 相关代码 */
+            .sidebar.active ~ #content {
+                transform: none !important;
+                filter: none !important;
+            }
+        }
+
+        @media (max-width: 576px) {
+
+            .filter-group {
+                gap: var(--space-sm);
+                width: 100%;        /* 占据全宽 */
+                padding: 0 10px;    /* 留出安全边距 */
+            }
+    
+            .filter-btn {
+                flex: 1;            /* 等宽按钮 */
+                min-width: 100px;   /* 最小宽度 */
+                white-space: nowrap;
+            }
+            .group-header {
+                flex-direction: column;
+                align-items: flex-start;
+            }
+
+            .toggle-btn {
+                width: 100%;
+            }
+        }
+
+        html {
+            scroll-behavior: smooth;
+        }
+    </style>
+</head>
+<body>
+    <div class="controls">
+        <div class="filter-group">
+            <button class="filter-btn active" onclick="filterGroups('all')">全部</button>
+            <button class="filter-btn" onclick="filterGroups('four')">四字成语</button>
+            <button class="filter-btn" onclick="filterGroups('two')">二字实词</button>
+        </div>
+    </div>
+
+    <div class="sidebar-toggle" onclick="toggleSidebar()">导航目录</div>
+
+    <div class="sidebar">
+        <h3>导航目录</h3>
+        <div id="navLinks"></div>
+    </div>
+
+    <div id="content"></div>
+
+    <script>
+        let allQuads = [];
+        let currentFilter = 'all';
+        let idiomsData, questionsData;
+
+        // 初始化加载
+        Promise.all([
+            fetch('idioms_trios.json').then(r => r.json()),
+            fetch('merged_questions.json').then(r => r.json())
+        ]).then(([idioms, questions]) => {
+            idiomsData = idioms;
+            questionsData = questions;
+            allQuads = processData();
+            renderContent(allQuads);
+            setupNavigation(allQuads);
+        }).catch(error => {
+            console.error('数据加载失败:', error);
+            showError();
+        });
+
+        // 数据处理
+        function processData() {
+            const quads = [];
+            const visited = new Set();
+
+            idiomsData.nodes.forEach(node => {
+                if (!visited.has(node.id)) {
+                    const component = findConnectedComponents(node.id);
+                    if (component.size === 3) {
+                        const quad = buildQuad(component);
+                        quads.push(quad);
+                        component.forEach(n => visited.add(n));
+                    }
+                }
+            });
+            return quads;
+        }
+
+        function findConnectedComponents(startId) {
+            const component = new Set([startId]);
+            const stack = [startId];
+
+            while (stack.length > 0 && component.size < 3) {
+                const current = stack.pop();
+                idiomsData.edges.forEach(edge => {
+                    if (edge.source === current || edge.target === current) {
+                        const neighbor = edge.source === current ? edge.target : edge.source;
+                        if (!component.has(neighbor)) {
+                            component.add(neighbor);
+                            stack.push(neighbor);
+                        }
+                    }
+                });
+            }
+            return component;
+        }
+
+        function buildQuad(component) {
+            const nodes = Array.from(component);
+            return {
+                id: nodes.join('-'),
+                nodes: nodes,
+                type: determineType(nodes),
+                questions: collectQuestions(nodes)
+            };
+        }
+
+        function determineType(nodes) {
+            const hasFour = nodes.some(n => n.length === 4);
+            const hasTwo = nodes.some(n => n.length === 2);
+            return hasFour && !hasTwo ? 'four' : 
+                   hasTwo && !hasFour ? 'two' : 'mixed';
+        }
+
+        function collectQuestions(nodes) {
+            const questionIds = new Set();
+            idiomsData.edges.forEach(edge => {
+                if (nodes.includes(edge.source) && nodes.includes(edge.target)) {
+                    edge.questions.forEach(id => questionIds.add(id));
+                }
+            });
+            return Array.from(questionIds).map(id => questionsData[id]).filter(q => q);
+        }
+
+        // 渲染逻辑
+        function renderContent(quads) {
+            const contentDiv = document.getElementById('content');
+            const filtered = quads.filter(quad => 
+                currentFilter === 'all' || quad.type === currentFilter
+            );
+            
+            contentDiv.innerHTML = filtered.map(quad => `
+                <div class="quad-group" id="${quad.id}">
+                    <div class="group-header">
+                        <h2>${quad.nodes.join('、')}</h2>
+                        <button class="toggle-btn" onclick="toggleQuestions(this)">隐藏题目</button>
+                    </div>
+                    <div class="nodes-container">
+                        ${quad.nodes.map(nodeId => createNodeCard(nodeId)).join('')}
+                    </div>
+                    <div class="questions-section">
+                        <h3>关联试题（${quad.questions.length}题）</h3>
+                        ${quad.questions.map(q => createQuestionCard(q)).join('')}
+                    </div>
+                </div>
+            `).join('');
+        }
+
+        function createNodeCard(nodeId) {
+            const node = idiomsData.nodes.find(n => n.id === nodeId);
+            return `
+                <div class="node-card">
+                    <h3>${node.id}</h3>
+                    <p><strong>解释：</strong>${node.explanation}</p>
+                    <p><strong>近义词：</strong>${node.similar.join('、')}</p>
+                    <p><strong>反义词：</strong>${node.opposite.join('、')}</p>
+                </div>
+            `;
+        }
+
+        function createQuestionCard(q) {
+            return `
+                <div class="question-card">
+                    <p>${q.text}</p>
+                    <div>${q.options.map(opt => `<p>${opt}</p>`).join('')}</div>
+                    <details>
+                        <summary>查看解析</summary>
+                        ${q.analysis.replace(/(第一步|第二步|第三步|因此，选择)/g, '<br><strong>$1</strong>')}
+                    </details>
+                </div>
+            `;
+        }
+
+        // 侧边栏导航
+        function setupNavigation(quads) {
+            const navLinks = document.getElementById('navLinks');
+            navLinks.innerHTML = quads.map(quad => `
+                <a href="#${quad.id}" class="nav-link" data-type="${quad.type}">
+                    ${quad.nodes.join('、')}
+                </a>
+            `).join('');
+        }
+
+        // 交互功能
+        function toggleQuestions(button) {
+            const questionsSection = button.closest('.quad-group').querySelector('.questions-section');
+            questionsSection.style.display = questionsSection.style.display === 'none' ? 'block' : 'none';
+            button.textContent = questionsSection.style.display === 'none' ? '显示题目' : '隐藏题目';
+        }
+
+        function filterGroups(type) {
+            currentFilter = type;
+            // 更新按钮状态
+            document.querySelectorAll('.filter-btn').forEach(btn => 
+                btn.classList.toggle('active', btn.textContent.includes(type))
+            );
+            // 过滤内容
+            const filtered = allQuads.filter(quad => 
+                type === 'all' || quad.type === type
+            );
+            renderContent(filtered);
+            // 更新导航
+            document.querySelectorAll('#navLinks a').forEach(link => {
+                link.style.display = type === 'all' ? 'block' : 
+                    link.dataset.type === type ? 'block' : 'none';
+            });
+        }
+
+        function toggleSidebar() {
+            const sidebar = document.querySelector('.sidebar');
+            const mask = document.querySelector('.sidebar-mask');
+            sidebar.classList.toggle('active');
+            mask.style.display = sidebar.classList.contains('active') ? 'block' : 'none';
+            
+            // 优化移动端滚动控制
+            document.body.style.overflow = sidebar.classList.contains('active') ? 'hidden' : 'auto';
+        }
+
+        function showError() {
+            const contentDiv = document.getElementById('content');
+            contentDiv.innerHTML = `
+                <div class="error">
+                    <h3>数据加载失败，请检查：</h3>
+                    <p>1. 确认JSON文件存在且路径正确</p>
+                    <p>2. 检查浏览器控制台错误信息</p>
+                    <p>3. 尝试刷新页面或清除缓存</p>
+                </div>
+            `;
+        }
+    </script>
+    <!-- 在body末尾添加遮罩层 -->
+    <div class="sidebar-mask" onclick="toggleSidebar()"></div>
+</body>
+</html>
